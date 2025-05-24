@@ -1,3 +1,5 @@
 node_modules/
+cocktail-api/node_modules/
+cocktail-front/node_modules/
 dist/
 Userseliza.npm-cache/
