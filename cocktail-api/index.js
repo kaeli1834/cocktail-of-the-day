@@ -3,7 +3,7 @@ const axios = require("axios");
 const cors = require("cors");
 
 const app = express();
-const PORT = 3001;
+const PORT = process.env.PORT || 3000;
 
 app.use(cors());
 
@@ -50,5 +50,5 @@ function getIngredients(drink) {
 }
 
 app.listen(PORT, () => {
-  console.log(`✅ Serveur prêt sur http://localhost:${PORT}`);
+  console.log(`✅ Serveur prêt`);
 });
