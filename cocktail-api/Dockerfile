@@ -1,8 +1,8 @@
 # Multi-stage build for optimal performance
 FROM node:18-alpine AS base
 
-# Install dumb-init for proper signal handling
-RUN apk add --no-cache dumb-init
+# Install dumb-init and curl for proper signal handling and health checks
+RUN apk add --no-cache dumb-init curl
 
 # Create app directory
 WORKDIR /app
@@ -41,8 +41,8 @@ USER nodejs
 EXPOSE 3000
 
 # Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-  CMD node -e "require('http').get('http://localhost:3000/api/daily-cocktail', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) })"
+HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
+  CMD curl -f http://localhost:3000/api/health || exit 1
 
 # Start application
 CMD ["dumb-init", "node", "index.js"]

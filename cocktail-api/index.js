@@ -10,6 +10,10 @@ const errorHandler = require('./src/middleware/errorHandler');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+console.log('🔧 Starting Cocktail API...');
+console.log(`📍 Environment: ${process.env.NODE_ENV || 'development'}`);
+console.log(`🔌 Port: ${PORT}`);
+
 // Middleware
 app.use(cors());
 app.use(express.json());
@@ -33,6 +37,7 @@ app.use('*', (req, res) => {
 
 app.listen(PORT, () => {
   console.log(`🚀 Cocktail API server running on port ${PORT}`);
-  console.log(`📊 Health check: http://localhost:${PORT}/health`);
+  console.log(`📊 Health check: http://localhost:${PORT}/api/health`);
   console.log(`🍸 Daily cocktail: http://localhost:${PORT}/api/daily-cocktail`);
+  console.log('✅ Server is ready to accept connections');
 });
