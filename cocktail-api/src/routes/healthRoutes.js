@@ -3,7 +3,7 @@ const cocktailService = require('../services/cocktailService');
 
 const router = express.Router();
 
-router.get('/health', (req, res) => {
+router.get('/', (req, res) => {
   res.json({
     status: 'healthy',
     timestamp: new Date().toISOString(),
@@ -12,7 +12,7 @@ router.get('/health', (req, res) => {
   });
 });
 
-router.get('/health/detailed', async (req, res) => {
+router.get('/detailed', async (req, res) => {
   try {
     // Test API connectivity
     const testStart = Date.now();
