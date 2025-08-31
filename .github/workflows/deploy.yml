@@ -28,12 +28,6 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}-${{ inputs.environment || 'production' }}
   cancel-in-progress: false
 
-permissions:
-  contents: read
-  packages: write
-  id-token: write
-  security-events: write
-
 env:
   REGISTRY: ghcr.io
   IMAGE_API: ghcr.io/${{ github.repository }}/cocktail-api
