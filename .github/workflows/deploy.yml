@@ -10,15 +10,15 @@ on:
   workflow_dispatch:
     inputs:
       environment:
-        description: 'Environment to deploy to'
+        description: "Environment to deploy to"
         required: true
-        default: 'production'
+        default: "production"
         type: choice
         options:
           - production
           - staging
       skip_tests:
-        description: 'Skip tests'
+        description: "Skip tests"
         required: false
         default: false
         type: boolean
@@ -51,8 +51,8 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
-          cache: 'npm'
+          node-version: "20"
+          cache: "npm"
           cache-dependency-path: |
             cocktail-api/package-lock.json
             cocktail-front/package-lock.json
@@ -79,17 +79,17 @@ jobs:
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@master
         with:
-          scan-type: 'fs'
-          scan-ref: '.'
-          format: 'sarif'
-          output: 'trivy-results.sarif'
-          severity: 'CRITICAL,HIGH'
+          scan-type: "fs"
+          scan-ref: "."
+          format: "sarif"
+          output: "trivy-results.sarif"
+          severity: "CRITICAL,HIGH"
 
       - name: Upload Trivy scan results to GitHub Security tab
         uses: github/codeql-action/upload-sarif@v3
         if: always()
         with:
-          sarif_file: 'trivy-results.sarif'
+          sarif_file: "trivy-results.sarif"
 
   build-and-push:
     name: 🏗️ Build & Push Images
@@ -193,7 +193,7 @@ jobs:
         with:
           token: ${{ github.token }}
           environment: ${{ inputs.environment || 'production' }}
-          initial-status: 'in_progress'
+          initial-status: "in_progress"
 
       - name: Deploy to server
         id: deploy
@@ -208,10 +208,9 @@ jobs:
           script: |
             set -euo pipefail
             echo "🚀 Starting deployment..."
-            
+
             # Navigate to deployment directory
-            DEPLOY_PATH="${DEPLOY_PATH:-/srv/cocktail-of-the-day}"
-            cd "$DEPLOY_PATH"
+            cd "${{ secrets.SSH_PATH }}"
             echo "📁 Working directory: $(pwd)"
 
             # Login to GHCR (uncomment if using private images)
@@ -252,7 +251,7 @@ jobs:
             echo "🏥 Running post-deployment health check..."
             max_retries=10
             retry_count=0
-            
+
             while [ $retry_count -lt $max_retries ]; do
               if curl -f http://localhost:3000/health > /dev/null 2>&1; then
                 echo "✅ API is healthy"
@@ -296,7 +295,7 @@ jobs:
         with:
           token: ${{ github.token }}
           environment: ${{ inputs.environment || 'production' }}
-          state: 'success'
+          state: "success"
           deployment-id: ${{ steps.deployment.outputs.deployment_id }}
 
       - name: Update deployment status (failure)
@@ -305,7 +304,7 @@ jobs:
         with:
           token: ${{ github.token }}
           environment: ${{ inputs.environment || 'production' }}
-          state: 'failure'
+          state: "failure"
           deployment-id: ${{ steps.deployment.outputs.deployment_id }}
 
   notify:
@@ -319,7 +318,7 @@ jobs:
         run: |
           echo "✅ Deployment successful!"
           echo "🌐 Application should be available at your configured URL"
-          
+
       - name: Notify failure
         if: needs.deploy.result == 'failure'
         run: |
