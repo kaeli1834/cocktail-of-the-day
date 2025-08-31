@@ -254,7 +254,7 @@ jobs:
 
             # Show running containers
             echo "Running containers:"
-            docker compose ps
+            docker compose -f compose.cocktail.prod.yml ps
 
             echo "Deployment completed successfully!"
         env:
