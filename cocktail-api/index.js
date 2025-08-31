@@ -1,54 +1,38 @@
-const express = require("express");
-const axios = require("axios");
-const cors = require("cors");
+const express = require('express');
+const cors = require('cors');
+
+// Import routes and middleware
+const cocktailRoutes = require('./src/routes/cocktailRoutes');
+const healthRoutes = require('./src/routes/healthRoutes');
+const logging = require('./src/middleware/logging');
+const errorHandler = require('./src/middleware/errorHandler');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Middleware
 app.use(cors());
+app.use(express.json());
+app.use(logging);
 
-// Route cocktail du jour
-app.get("/api/daily-cocktail", async (req, res) => {
-  try {
-    // Étape 1 : récupérer tous les cocktails
-    const listRes = await axios.get("https://www.thecocktaildb.com/api/json/v1/1/filter.php?a=Alcoholic");
-    const cocktails = listRes.data.drinks;
+// Routes
+app.use('/api', cocktailRoutes);
+app.use('/', healthRoutes);
 
-    // Étape 2 : générer un index basé sur la date
-    const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
-    const seed = parseInt(today.replaceAll("-", ""), 10);
-    const index = seed % cocktails.length;
-    const cocktailId = cocktails[index].idDrink;
+// Error handling
+app.use(errorHandler);
 
-    // Étape 3 : récupérer les détails
-    const detailRes = await axios.get(`https://www.thecocktaildb.com/api/json/v1/1/lookup.php?i=${cocktailId}`);
-    const drink = detailRes.data.drinks[0];
-
-    res.json({
-      name: drink.strDrink,
-      image: drink.strDrinkThumb,
-      instructions: drink.strInstructions,
-      ingredients: getIngredients(drink),
-    });
-  } catch (error) {
-    console.error("Erreur API :", error.message);
-    res.status(500).json({ error: "Impossible de récupérer le cocktail du jour" });
-  }
+// 404 handler
+app.use('*', (req, res) => {
+  res.status(404).json({
+    error: 'Route not found',
+    path: req.originalUrl,
+    timestamp: new Date().toISOString()
+  });
 });
 
-// Fonction utilitaire
-function getIngredients(drink) {
-  const ingredients = [];
-  for (let i = 1; i <= 15; i++) {
-    const ingredient = drink[`strIngredient${i}`];
-    const measure = drink[`strMeasure${i}`];
-    if (ingredient) {
-      ingredients.push(`${measure ? measure.trim() : ''} ${ingredient.trim()}`.trim());
-    }
-  }
-  return ingredients;
-}
-
 app.listen(PORT, () => {
-  console.log(`✅ Serveur prêt`);
+  console.log(`🚀 Cocktail API server running on port ${PORT}`);
+  console.log(`📊 Health check: http://localhost:${PORT}/health`);
+  console.log(`🍸 Daily cocktail: http://localhost:${PORT}/api/daily-cocktail`);
 });
