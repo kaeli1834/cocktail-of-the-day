@@ -19,10 +19,6 @@ FROM base AS builder
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-# Set build argument and environment variable
-ARG VITE_API_URL=http://localhost:3000
-ENV VITE_API_URL=$VITE_API_URL
-
 # Build the application
 RUN npm run build
 
@@ -36,13 +32,13 @@ RUN if ! id nginx >/dev/null 2>&1; then \
   fi
 
 # Copy built assets from builder stage
-COPY --from=builder /app/dist /home/serveruser/data/getkaeli/cocktail-of-the-day/html
+COPY --from=builder /app/dist /usr/share/nginx/html
 
 # Copy nginx configuration
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
 # Set proper permissions
-RUN chown -R nginx:nginx /home/serveruser/data/getkaeli/cocktail-of-the-day/html && \
+RUN chown -R nginx:nginx /usr/share/nginx/html && \
   chown -R nginx:nginx /var/cache/nginx && \
   chown -R nginx:nginx /var/log/nginx && \
   chown -R nginx:nginx /etc/nginx/conf.d
