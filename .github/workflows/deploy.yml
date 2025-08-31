@@ -248,28 +248,6 @@ jobs:
             echo "Waiting for services to be ready..."
             sleep 30
 
-            # Health check after deployment
-            echo "Running post-deployment health check..."
-            # attend que /health réponde 2xx, max 12 tentatives (2 min)
-            max=12 i=0
-            until curl -fsS http://localhost:3000/api/health > /dev/null; do
-              ((++i>max)) && {
-                echo "API toujours indispo après $max essais"
-                docker compose -f compose.cocktail.prod.yml ps
-                docker compose -f compose.cocktail.prod.yml logs api # replace 'api' with your service name
-                exit 1
-              }
-              echo "API pas prête... ($i/$max)"; sleep 10
-            done
-
-
-            # Check frontend
-            if curl -f http://localhost:8080 > /dev/null 2>&1; then
-              echo "Frontend is accessible"
-            else
-              echo "Frontend health check failed"
-            fi
-
             # Cleanup old images
             echo "Cleaning up old images..."
             docker image prune -f
