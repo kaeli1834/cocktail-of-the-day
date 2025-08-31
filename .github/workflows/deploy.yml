@@ -250,25 +250,14 @@ jobs:
 
             # Health check after deployment
             echo "Running post-deployment health check..."
-            max_retries=10
-            retry_count=0
-
-            while [ $retry_count -lt $max_retries ]; do
-              echo "Checking API health..."
-              if curl -f http://localhost:3000/health > /dev/null 2>&1; then
-                echo "API is healthy"
-                break
-              else
-                echo "API not ready yet, retrying... ($((retry_count + 1))/$max_retries)"
-                sleep 10
-                retry_count=$((retry_count + 1))
-              fi
+            # attend que /health réponde 2xx, max 12 tentatives (2 min)
+            max=12 i=0
+            until curl -fsS http://localhost:3000/health > /dev/null; do
+              ((++i>max)) && { echo "API toujours indispo après $max essais"; exit 1; }
+              echo "API pas prête... ($i/$max)"; sleep 10
             done
+            echo "API is healthy"
 
-            if [ $retry_count -eq $max_retries ]; then
-              echo "API health check failed after $max_retries attempts"
-              exit 1
-            fi
 
             # Check frontend
             if curl -f http://localhost:8080 > /dev/null 2>&1; then
