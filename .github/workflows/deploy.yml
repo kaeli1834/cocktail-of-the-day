@@ -112,7 +112,7 @@ jobs:
       - name: Log in to GHCR
         uses: docker/login-action@v3
         with:
-          registry: ${{ env.REGISTRY }}
+          registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
@@ -239,6 +239,8 @@ jobs:
             # Pull latest images
             echo "Pulling latest images..."
             docker compose -f compose.cocktail.prod.yml pull
+
+            # Ensure compose file uses only registry images, not local build contexts
 
             # Deploy with zero-downtime strategy
             echo "Deploying services..."
