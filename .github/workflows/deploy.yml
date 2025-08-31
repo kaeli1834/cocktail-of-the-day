@@ -252,7 +252,7 @@ jobs:
             echo "Running post-deployment health check..."
             # attend que /health réponde 2xx, max 12 tentatives (2 min)
             max=12 i=0
-            until curl -fsS http://127.0.0.1:3000/health > /dev/null; do
+            until curl -fsS http://127.0.0.1:3000/api/health > /dev/null; do
               ((++i>max)) && { echo "API toujours indispo après $max essais"; exit 1; }
               echo "API pas prête... ($i/$max)"; sleep 10
             done

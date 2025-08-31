@@ -17,7 +17,7 @@ app.use(logging);
 
 // Routes
 app.use('/api', cocktailRoutes);
-app.use('/', healthRoutes);
+app.use('/api', healthRoutes);
 
 // Error handling
 app.use(errorHandler);
