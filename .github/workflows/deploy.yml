@@ -253,10 +253,14 @@ jobs:
             # attend que /health réponde 2xx, max 12 tentatives (2 min)
             max=12 i=0
             until curl -fsS http://localhost:3000/api/health > /dev/null; do
-              ((++i>max)) && { echo "API toujours indispo après $max essais"; exit 1; }
+              ((++i>max)) && {
+                echo "API toujours indispo après $max essais"
+                docker compose -f compose.cocktail.prod.yml ps
+                docker compose -f compose.cocktail.prod.yml logs api # replace 'api' with your service name
+                exit 1
+              }
               echo "API pas prête... ($i/$max)"; sleep 10
             done
-            echo "API is healthy"
 
 
             # Check frontend
