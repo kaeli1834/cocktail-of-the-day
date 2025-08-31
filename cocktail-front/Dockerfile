@@ -36,13 +36,13 @@ RUN if ! id nginx >/dev/null 2>&1; then \
   fi
 
 # Copy built assets from builder stage
-COPY --from=builder /app/dist /usr/share/nginx/html
+COPY --from=builder /app/dist /home/serveruser/data/getkaeli/cocktail-of-the-day/html
 
 # Copy nginx configuration
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
 # Set proper permissions
-RUN chown -R nginx:nginx /usr/share/nginx/html && \
+RUN chown -R nginx:nginx /home/serveruser/data/getkaeli/cocktail-of-the-day/html && \
   chown -R nginx:nginx /var/cache/nginx && \
   chown -R nginx:nginx /var/log/nginx && \
   chown -R nginx:nginx /etc/nginx/conf.d
