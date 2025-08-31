@@ -226,11 +226,11 @@ jobs:
 
             # Create backup of current state
             echo "💾 Creating backup..."
-            docker compose config > docker-compose.backup.yml
+            docker compose -f compose.cocktail.prod.yml config > docker-compose.backup.yml
 
             # Health check before deployment
             echo "🏥 Running pre-deployment health check..."
-            if docker compose ps --services --filter "status=running" | grep -q .; then
+            if docker compose -f compose.cocktail.prod.yml ps --services --filter "status=running" | grep -q .; then
               echo "✅ Services are running"
             else
               echo "⚠️  No services currently running"
