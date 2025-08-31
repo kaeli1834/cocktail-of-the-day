@@ -214,11 +214,9 @@ jobs:
             cd "${{ secrets.SSH_PATH }}"
             echo "Working directory: $(pwd)"
 
-            # Login to GHCR (uncomment if using private images)
-            if [[ -n "${GHCR_TOKEN:-}" ]]; then
-              echo "Logging in to GHCR..."
-              echo "${GHCR_TOKEN}" | docker login ghcr.io -u "${GHCR_USERNAME}" --password-stdin
-            fi
+            # Login to GHCR
+            docker login ghcr.io -u ${{ github.actor }} -p ${{ secrets.GITHUB_TOKEN }}
+
 
             # Verify docker compose
             echo "Docker Compose version:"
