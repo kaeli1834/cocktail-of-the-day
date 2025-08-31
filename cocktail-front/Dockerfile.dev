@@ -1,0 +1,23 @@
+# Development Dockerfile for hot reload
+FROM node:18-alpine
+
+# Install dumb-init
+RUN apk add --no-cache dumb-init
+
+# Set working directory
+WORKDIR /app
+
+# Copy package files
+COPY package*.json ./
+
+# Install dependencies
+RUN npm ci
+
+# Copy source code
+COPY . .
+
+# Expose port for Vite dev server
+EXPOSE 5173
+
+# Start development server with hot reload
+CMD ["dumb-init", "npm", "run", "dev", "--", "--host", "0.0.0.0"]

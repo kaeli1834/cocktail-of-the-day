@@ -1,0 +1,66 @@
+version: '3.8'
+
+services:
+  # Backend API service
+  cocktail-api:
+    build:
+      context: ./cocktail-api
+      target: production
+    container_name: cocktail-api
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000/api/daily-cocktail', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) })"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    networks:
+      - cocktail-network
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.5'
+
+  # Frontend service
+  cocktail-front:
+    build:
+      context: ./cocktail-front
+      target: production
+    container_name: cocktail-front
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    depends_on:
+      cocktail-api:
+        condition: service_healthy
+    environment:
+      - NGINX_HOST=localhost
+      - NGINX_PORT=8080
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    networks:
+      - cocktail-network
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+          cpus: '0.25'
+
+networks:
+  cocktail-network:
+    driver: bridge
+
+# Optional: Add volume for logs in production
+# volumes:
+#   logs:
+#     driver: local

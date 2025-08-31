@@ -1,0 +1,45 @@
+version: '3.8'
+
+services:
+  # Backend API service (development)
+  cocktail-api-dev:
+    build:
+      context: ./cocktail-api
+      target: dev
+    container_name: cocktail-api-dev
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+      - PORT=3000
+    volumes:
+      - ./cocktail-api:/app
+      - /app/node_modules
+    networks:
+      - cocktail-network-dev
+    command: ["dumb-init", "node", "index.js"]
+
+  # Frontend service (development)
+  cocktail-front-dev:
+    build:
+      context: ./cocktail-front
+      dockerfile: Dockerfile.dev
+    container_name: cocktail-front-dev
+    restart: unless-stopped
+    ports:
+      - "5173:5173"
+    environment:
+      - VITE_API_URL=http://localhost:3000
+    volumes:
+      - ./cocktail-front:/app
+      - /app/node_modules
+    depends_on:
+      - cocktail-api-dev
+    networks:
+      - cocktail-network-dev
+    command: ["npm", "run", "dev", "--", "--host", "0.0.0.0"]
+
+networks:
+  cocktail-network-dev:
+    driver: bridge
