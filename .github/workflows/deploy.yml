@@ -252,23 +252,18 @@ jobs:
             echo "Running post-deployment health check..."
             max_retries=10
             retry_count=0
+
             while [ $retry_count -lt $max_retries ]; do
-              if curl --retry 3 --retry-delay 5 --max-time 10 -f http://127.0.0.1:3000/health > /dev/null 2>&1; then
-              echo "API is healthy"
-              break
+              echo "Checking API health..."
+              if curl -f http://localhost:3000/health > /dev/null 2>&1; then
+                echo "API is healthy"
+                break
               else
-              echo "API not ready yet, retrying... ($((retry_count + 1))/$max_retries)"
-              sleep 10
-              retry_count=$((retry_count + 1))
+                echo "API not ready yet, retrying... ($((retry_count + 1))/$max_retries)"
+                sleep 10
+                retry_count=$((retry_count + 1))
               fi
             done
-
-            # Affiche le code de sortie du dernier curl pour debug
-            if [ $retry_count -eq $max_retries ]; then
-              echo "API health check failed after $max_retries attempts"
-              curl -v http://127.0.0.1:3000/health || true
-              exit 1
-            fi
 
             if [ $retry_count -eq $max_retries ]; then
               echo "API health check failed after $max_retries attempts"
