@@ -1,6 +1,7 @@
 # 🍸 Cocktail of the Day
 
 Une application web complète pour découvrir des cocktails avec deux fonctionnalités principales :
+
 - **Cocktail du jour** : Un cocktail différent chaque jour basé sur la date
 - **Roulette de cocktails** : Sélection aléatoire selon vos préférences d'alcool
 
@@ -19,12 +20,14 @@ Une application web complète pour découvrir des cocktails avec deux fonctionna
 ## 🎯 Fonctionnalités
 
 ### 🗓️ Cocktail du jour
+
 - Affiche un cocktail unique basé sur la date actuelle
 - Cocktail cohérent : le même cocktail s'affiche pour tous les utilisateurs le même jour
 - Interface élégante avec image, ingrédients et instructions
 - Design responsive (mobile et desktop)
 
 ### 🎰 Roulette de cocktails
+
 - Sélection de types d'alcool (Vodka, Gin, Rum, Tequila, Whiskey, Sans alcool)
 - Option "Tous" pour sélectionner/désélectionner tous les types
 - Roue interactive animée pour la sélection
@@ -33,12 +36,14 @@ Une application web complète pour découvrir des cocktails avec deux fonctionna
 ## 🛠️ Technologies utilisées
 
 ### Backend (`cocktail-api/`)
+
 - **Node.js** avec Express.js
 - **Axios** pour les requêtes HTTP vers l'API externe
 - **CORS** pour les requêtes cross-origin
 - **TheCocktailDB API** comme source de données
 
 ### Frontend (`cocktail-front/`)
+
 - **React 18** avec TypeScript
 - **Vite** comme bundler et serveur de développement
 - **Material-UI (MUI)** pour l'interface utilisateur
@@ -47,6 +52,7 @@ Une application web complète pour découvrir des cocktails avec deux fonctionna
 - **react-custom-roulette** pour l'animation de la roulette
 
 ### DevOps
+
 - **Docker** pour la containerisation
 - **Docker Compose** pour l'orchestration
 - **Nginx** pour servir le frontend en production
@@ -95,29 +101,35 @@ cocktail-of-the-day/
 ## 🚀 Installation et démarrage
 
 ### Prérequis
+
 - Node.js (version 16 ou supérieure)
 - npm ou yarn
 
 ### 1. Cloner le projet
+
 ```bash
 git clone https://github.com/votre-username/cocktail-of-the-day.git
 cd cocktail-of-the-day
 ```
 
 ### 2. Installation du backend
+
 ```bash
 cd cocktail-api
 npm install
 ```
 
 ### 3. Installation du frontend
+
 ```bash
 cd ../cocktail-front
 npm install
 ```
 
 ### 4. Configuration des variables d'environnement
+
 Créez un fichier `.env` dans le dossier `cocktail-front/` :
+
 ```env
 VITE_API_URL=http://localhost:3000
 ```
@@ -125,6 +137,7 @@ VITE_API_URL=http://localhost:3000
 ### 5. Démarrage des services
 
 #### Backend (Terminal 1)
+
 ```bash
 cd cocktail-api
 node index.js
@@ -132,6 +145,7 @@ node index.js
 ```
 
 #### Frontend (Terminal 2)
+
 ```bash
 cd cocktail-front
 npm run dev
@@ -141,15 +155,17 @@ npm run dev
 ## 🐳 Déploiement avec Docker
 
 ### Prérequis Docker
+
 - Docker (version 20.10 ou supérieure)
 - Docker Compose (version 2.0 ou supérieure)
 
 ### 🚀 Démarrage rapide avec Docker
 
 #### Production (recommandé)
+
 ```bash
 # Cloner le projet
-git clone https://github.com/votre-username/cocktail-of-the-day.git
+git clone https://github.com/kaeli1834/cocktail-of-the-day.git
 cd cocktail-of-the-day
 
 # Démarrer l'application complète
@@ -161,6 +177,7 @@ docker-compose up -d
 ```
 
 #### Développement avec hot-reload
+
 ```bash
 # Démarrer en mode développement
 docker-compose -f docker-compose.dev.yml up
@@ -173,6 +190,7 @@ docker-compose -f docker-compose.dev.yml up
 ### 🏗️ Commandes Docker utiles
 
 #### Gestion des containers
+
 ```bash
 # Voir les logs
 docker-compose logs -f
@@ -188,6 +206,7 @@ docker-compose ps
 ```
 
 #### Nettoyage
+
 ```bash
 # Supprimer les volumes et containers
 docker-compose down -v
@@ -202,7 +221,9 @@ docker system prune -af
 ### 🔧 Configuration Docker
 
 #### Variables d'environnement
+
 Créez un fichier `.env` à la racine du projet pour personnaliser :
+
 ```env
 # Ports
 API_PORT=3000
@@ -216,6 +237,7 @@ VITE_API_URL=http://localhost:3000
 ```
 
 #### Optimisations de performance
+
 - **Multi-stage builds** : Images optimisées pour la production
 - **Alpine Linux** : Images légères (~50MB vs ~300MB)
 - **Non-root user** : Sécurité renforcée
@@ -224,6 +246,7 @@ VITE_API_URL=http://localhost:3000
 - **Nginx caching** : Cache statique pour le frontend
 
 #### Structure des Dockerfiles
+
 - `cocktail-api/Dockerfile` : Backend Node.js optimisé
 - `cocktail-front/Dockerfile` : Build React + Nginx pour production
 - `cocktail-front/Dockerfile.dev` : Développement avec hot-reload
@@ -233,19 +256,27 @@ VITE_API_URL=http://localhost:3000
 ### Backend (Port 3000)
 
 #### `GET /api/daily-cocktail`
+
 Retourne le cocktail du jour basé sur la date actuelle.
 
 **Réponse :**
+
 ```json
 {
   "name": "Margarita",
   "image": "https://www.thecocktaildb.com/images/media/drink/5noda61589575158.jpg",
   "instructions": "Rub the rim of the glass with the lime slice...",
-  "ingredients": ["1 1/2 oz Tequila", "1/2 oz Triple sec", "1 oz Lime juice", "Salt"]
+  "ingredients": [
+    "1 1/2 oz Tequila",
+    "1/2 oz Triple sec",
+    "1 oz Lime juice",
+    "Salt"
+  ]
 }
 ```
 
 ### API externe utilisée
+
 - **TheCocktailDB** : `https://www.thecocktaildb.com/api/json/v1/1/`
   - Liste des cocktails alcoolisés : `filter.php?a=Alcoholic`
   - Détails d'un cocktail : `lookup.php?i={id}`
@@ -254,15 +285,18 @@ Retourne le cocktail du jour basé sur la date actuelle.
 ## 🌐 Frontend
 
 ### Pages disponibles
+
 - `/` : Page d'accueil avec le cocktail du jour
 - `/spin` : Page roulette pour sélectionner un cocktail
 
 ### Composants principaux
+
 - **CocktailCard** : Affichage stylisé d'un cocktail avec image, ingrédients et instructions
 - **WheelSpinner** : Roue interactive pour la sélection aléatoire
 - **Navbar** : Navigation entre les pages
 
 ### Thème
+
 - **Mode sombre** avec palette violette/rose
 - **Design responsive** adaptatif mobile/desktop
 - **Animations** et transitions fluides
@@ -272,6 +306,7 @@ Retourne le cocktail du jour basé sur la date actuelle.
 ### Scripts disponibles
 
 #### Backend (`cocktail-api/`)
+
 ```json
 {
   "scripts": {
@@ -281,27 +316,31 @@ Retourne le cocktail du jour basé sur la date actuelle.
 ```
 
 #### Frontend (`cocktail-front/`)
+
 ```json
 {
   "scripts": {
-    "dev": "vite",              // Serveur de développement
-    "build": "tsc -b && vite build",  // Build de production
-    "lint": "eslint .",         // Vérification du code
-    "preview": "vite preview"   // Aperçu du build
+    "dev": "vite", // Serveur de développement
+    "build": "tsc -b && vite build", // Build de production
+    "lint": "eslint .", // Vérification du code
+    "preview": "vite preview" // Aperçu du build
   }
 }
 ```
 
 ### Variables d'environnement
+
 - `VITE_API_URL` : URL de base de l'API backend (défaut: `http://localhost:3000`)
 - `PORT` : Port du serveur backend (défaut: `3000`)
 
 ## 📸 Captures d'écran
 
 ### Page Cocktail du jour
+
 Interface élégante affichant le cocktail quotidien avec tous ses détails.
 
 ### Page Roulette
+
 Interface interactive permettant de sélectionner les types d'alcool et de faire tourner la roue pour découvrir un nouveau cocktail.
 
 ---
