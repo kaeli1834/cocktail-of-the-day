@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import axios from "axios";
 import {
   Card,
   CardContent,
@@ -12,24 +11,35 @@ import {
   Paper,
   Stack,
   Divider,
+  Alert,
+  Button,
 } from "@mui/material";
+import RefreshIcon from '@mui/icons-material/Refresh';
+import { cocktailAPI } from "../services/api";
 import type { Cocktail } from "../Types/Cocktail.tsx";
 
 function CocktailDayPage() {
   const [cocktail, setCocktail] = useState<Cocktail | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchDailyCocktail = async () => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      const dailyCocktail = await cocktailAPI.getDailyCocktail();
+      setCocktail(dailyCocktail);
+    } catch (err) {
+      console.error("Erreur API :", err);
+      setError("Impossible de récupérer le cocktail du jour. Veuillez réessayer.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    axios
-      .get(`${import.meta.env.VITE_API_URL}/api/daily-cocktail`)
-      .then((res) => {
-        setCocktail(res.data);
-        setLoading(false);
-      })
-      .catch((err) => {
-        console.error("Erreur API :", err);
-        setLoading(false);
-      });
+    fetchDailyCocktail();
   }, []);
 
   return (
@@ -65,12 +75,35 @@ function CocktailDayPage() {
         </Typography>
       </Paper>
 
+      {/* Error Display */}
+      {error && (
+        <Alert 
+          severity="error" 
+          sx={{ 
+            mb: 4, 
+            borderRadius: 2,
+          }}
+          action={
+            <Button 
+              color="inherit" 
+              size="small" 
+              onClick={fetchDailyCocktail}
+              startIcon={<RefreshIcon />}
+            >
+              Réessayer
+            </Button>
+          }
+        >
+          {error}
+        </Alert>
+      )}
+
       {/* Contenu principal */}
       {loading ? (
         <Box sx={{ display: "flex", justifyContent: "center", mt: 8 }}>
           <CircularProgress size={60} color="secondary" />
         </Box>
-      ) : cocktail ? (
+      ) : cocktail && !error ? (
         <Card
           sx={{
             width: { xs: "100%", sm: 500, md: 700 },

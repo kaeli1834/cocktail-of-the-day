@@ -50,6 +50,7 @@ export default function WheelSpinner({
       }
 
       const formatted: Cocktail = {
+        id: drink.idDrink,
         name: drink.strDrink,
         image: drink.strDrinkThumb,
         instructions: drink.strInstructions,
