@@ -242,7 +242,7 @@ jobs:
 
             # Deploy with zero-downtime strategy
             echo "Deploying services..."
-            docker compose up -d --remove-orphans
+            docker compose -f compose.cocktail.prod.yml up -d --remove-orphans
 
             # Wait for services to be ready
             echo "Waiting for services to be ready..."
