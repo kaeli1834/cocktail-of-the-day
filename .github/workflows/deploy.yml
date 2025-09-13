@@ -193,10 +193,10 @@ jobs:
           port: ${{ secrets.SSH_PORT }}
           script: |
             set -euo pipefail
-            APP_DIR="${{ secrets.COCKTAIL_PATH }}"   # ex: /srv/cocktail
-            CADDY_ROOT="${{ secrets.SSH_CADDY_ROOT }}"  # ex: /srv/caddy
-            API_DOMAIN="${{ secrets.COCKTAIL_API_DOMAIN }}"     # ex: api.cocktail.getkaeli.com
-            FRONT_DOMAIN="${{ secrets.COCKTAIL_FRONT_DOMAIN }}" # ex: cocktail.getkaeli.com
+            APP_DIR="${{ secrets.COCKTAIL_PATH }}"   
+            CADDY_ROOT="${{ secrets.SSH_CADDY_ROOT }}"  
+            API_DOMAIN="${{ secrets.COCKTAIL_API_DOMAIN }}"    
+            FRONT_DOMAIN="${{ secrets.COCKTAIL_FRONT_DOMAIN }}"
   
             mkdir -p "$APP_DIR"
             cd "$APP_DIR"
