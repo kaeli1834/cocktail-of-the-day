@@ -1,299 +1,120 @@
-name: 🚀 CI/CD - Cocktail of the Day
+deploy:
+  name: 🚀 Deploy (API + Front)
+  needs: build-and-push
+  runs-on: ubuntu-latest
+  steps:
+    - name: Deploy on server
+      uses: appleboy/ssh-action@v1.2.0
+      with:
+        host: ${{ secrets.SSH_HOST }}
+        username: ${{ secrets.SSH_USER }}
+        key: ${{ secrets.SSH_KEY }}
+        port: ${{ secrets.SSH_PORT }}
+        script: |
+          set -euo pipefail
+          APP_DIR="${{ secrets.COCKTAIL_PATH }}"   # ex: /srv/cocktail
+          CADDY_ROOT="${{ secrets.SSH_CADDY_ROOT }}"  # ex: /srv/caddy
+          API_DOMAIN="${{ secrets.COCKTAIL_API_DOMAIN }}"     # ex: api.cocktail.getkaeli.com
+          FRONT_DOMAIN="${{ secrets.COCKTAIL_FRONT_DOMAIN }}" # ex: cocktail.getkaeli.com
 
-on:
-  push:
-    branches: ["main"]
-    paths-ignore:
-      - "README.md"
-      - "docs/**"
-      - "*.md"
-  workflow_dispatch:
-    inputs:
-      environment:
-        description: "Environment to deploy to"
-        required: true
-        default: "production"
-        type: choice
-        options:
-          - production
-          - staging
-      skip_tests:
-        description: "Skip tests"
-        required: false
-        default: false
-        type: boolean
+          mkdir -p "$APP_DIR"
+          cd "$APP_DIR"
 
-# Évite les déploiements concurrents
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}-${{ inputs.environment || 'production' }}
-  cancel-in-progress: false
+          # (Option) régénérer le compose si tu préfères piloté par CI
+          cat > compose.cocktail.prod.yml <<'EOF'
+          version: "3.8"
+          networks:
+            web:
+              external: true
+          services:
+            cocktail-api:
+              image: ghcr.io/${{ github.repository }}/cocktail-api:latest
+              container_name: cocktail-api
+              restart: unless-stopped
+              expose: ["3000"]
+              environment:
+                NODE_ENV: production
+              healthcheck:
+                test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3000/health || exit 1"]
+                interval: 30s
+                timeout: 5s
+                retries: 3
+              networks: [web]
+              logging:
+                driver: json-file
+                options: { max-size: "10m", max-file: "3" }
+            cocktail-front:
+              image: ghcr.io/${{ github.repository }}/cocktail-front:latest
+              container_name: cocktail-front
+              restart: unless-stopped
+              expose: ["8080"]
+              environment:
+                NODE_ENV: production
+              healthcheck:
+                test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8080/ || exit 1"]
+                interval: 30s
+                timeout: 5s
+                retries: 3
+              networks: [web]
+              logging:
+                driver: json-file
+                options: { max-size: "10m", max-file: "3" }
+          EOF
 
-permissions:
-  contents: read
-  packages: write
-  id-token: write
-  security-events: write
-  deployments: write
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+          docker compose -f compose.cocktail.prod.yml pull
+          docker compose -f compose.cocktail.prod.yml up -d
+          docker compose -f compose.cocktail.prod.yml ps
 
-env:
-  REGISTRY: ghcr.io
-  IMAGE_API: ghcr.io/${{ github.repository }}/cocktail-api
-  IMAGE_FRONT: ghcr.io/${{ github.repository }}/cocktail-front
+          # 🔧 MAJ Caddy (ajout/MAJ des 2 blocs avec marqueurs)
+          CADDY_FILE="$CADDY_ROOT/Caddyfile"
+          TS="$(date +%Y%m%d_%H%M%S)"
+          cp "$CADDY_FILE" "$CADDY_FILE.bak.$TS"
 
-jobs:
-  test:
-    name: 🧪 Run Tests
-    runs-on: ubuntu-latest
-    if: ${{ !inputs.skip_tests }}
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+          # Supprimer anciens blocs (idempotent)
+          for NAME in "cocktail-api" "cocktail-front"; do
+            sed -i "/# >>> $NAME BEGIN >>>/,/# <<< $NAME END <<</d" "$CADDY_FILE"
+          done
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "20"
-          cache: "npm"
-          cache-dependency-path: |
-            cocktail-api/package-lock.json
-            cocktail-front/package-lock.json
+          # Ajouter bloc API
+          cat >> "$CADDY_FILE" <<EOF
+          # >>> cocktail-api BEGIN >>>
+          ${API_DOMAIN} {
+            reverse_proxy cocktail-api:3000
+            encode zstd gzip
+            header {
+              X-Frame-Options "DENY"
+              X-Content-Type-Options "nosniff"
+              Referrer-Policy "no-referrer"
+              Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+            }
+          }
+          # <<< cocktail-api END <<<
+          EOF
 
-      - name: Test API
-        run: |
-          cd cocktail-api
-          npm ci
-          npm run test || echo "No tests configured for API"
+          # Ajouter bloc FRONT
+          cat >> "$CADDY_FILE" <<EOF
+          # >>> cocktail-front BEGIN >>>
+          ${FRONT_DOMAIN} {
+            reverse_proxy cocktail-front:8080
+            encode zstd gzip
+            header {
+              X-Frame-Options "DENY"
+              X-Content-Type-Options "nosniff"
+              Referrer-Policy "no-referrer"
+              Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+            }
+          }
+          # <<< cocktail-front END <<<
+          EOF
 
-      - name: Test Frontend
-        run: |
-          cd cocktail-front
-          npm ci
-          npm run test || echo "No tests configured for Frontend"
+          # Valider et recharger Caddy
+          docker compose -f "$CADDY_ROOT/docker-compose.yml" exec -T caddy caddy validate --config /etc/caddy/Caddyfile
+          # si caddy n'est pas Up, le démarrer
+          if ! docker ps --filter "name=caddy" --filter "status=running" | grep -q caddy; then
+            docker compose -f "$CADDY_ROOT/docker-compose.yml" up -d caddy
+            sleep 5
+          fi
+          docker compose -f "$CADDY_ROOT/docker-compose.yml" exec -T caddy caddy reload --config /etc/caddy/Caddyfile
 
-  security-scan:
-    name: 🔒 Security Scan
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@master
-        with:
-          scan-type: "fs"
-          scan-ref: "."
-          format: "sarif"
-          output: "trivy-results.sarif"
-          severity: "CRITICAL,HIGH"
-
-      - name: Upload Trivy scan results to GitHub Security tab
-        uses: github/codeql-action/upload-sarif@v3
-        if: always()
-        with:
-          sarif_file: "trivy-results.sarif"
-
-  build-and-push:
-    name: 🏗️ Build & Push Images
-    runs-on: ubuntu-latest
-    needs: [test, security-scan]
-    if: always() && (needs.test.result == 'success' || needs.test.result == 'skipped') && needs.security-scan.result == 'success'
-    outputs:
-      api-image: ${{ steps.meta-api.outputs.tags }}
-      front-image: ${{ steps.meta-front.outputs.tags }}
-      api-digest: ${{ steps.build-api.outputs.digest }}
-      front-digest: ${{ steps.build-front.outputs.digest }}
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Log in to GHCR
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      # ---------- API Metadata ----------
-      - name: Extract API metadata
-        id: meta-api
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ env.IMAGE_API }}
-          tags: |
-            type=ref,event=branch
-            type=ref,event=pr
-            type=sha,prefix={{branch}}-
-            type=raw,value=latest,enable={{is_default_branch}}
-          labels: |
-            org.opencontainers.image.title=Cocktail API
-            org.opencontainers.image.description=Backend API for Cocktail of the Day
-            org.opencontainers.image.vendor=CocktailApp
-
-      # ---------- API Build ----------
-      - name: Build & Push API image
-        id: build-api
-        uses: docker/build-push-action@v6
-        with:
-          context: ./cocktail-api
-          platforms: linux/amd64,linux/arm64
-          push: true
-          tags: ${{ steps.meta-api.outputs.tags }}
-          labels: ${{ steps.meta-api.outputs.labels }}
-          cache-from: type=gha,scope=api
-          cache-to: type=gha,mode=max,scope=api
-          build-args: |
-            NODE_ENV=production
-
-      # ---------- Frontend Metadata ----------
-      - name: Extract Frontend metadata
-        id: meta-front
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ env.IMAGE_FRONT }}
-          tags: |
-            type=ref,event=branch
-            type=ref,event=pr
-            type=sha,prefix={{branch}}-
-            type=raw,value=latest,enable={{is_default_branch}}
-          labels: |
-            org.opencontainers.image.title=Cocktail Frontend
-            org.opencontainers.image.description=React frontend for Cocktail of the Day
-            org.opencontainers.image.vendor=CocktailApp
-
-      # ---------- Frontend Build ----------
-      - name: Build & Push Frontend image
-        id: build-front
-        uses: docker/build-push-action@v6
-        with:
-          context: ./cocktail-front
-          file: ./cocktail-front/Dockerfile
-          platforms: linux/amd64,linux/arm64
-          push: true
-          tags: ${{ steps.meta-front.outputs.tags }}
-          labels: ${{ steps.meta-front.outputs.labels }}
-          cache-from: type=gha,scope=frontend
-          cache-to: type=gha,mode=max,scope=frontend
-          build-args: |
-            VITE_API_URL=http://localhost:3000
-
-  deploy:
-    name: 🚀 Deploy
-    needs: build-and-push
-    runs-on: ubuntu-latest
-    environment: ${{ inputs.environment || 'production' }}
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Create deployment status
-        id: deployment
-        uses: chrnorm/deployment-action@v2
-        with:
-          token: ${{ github.token }}
-          environment: ${{ inputs.environment || 'production' }}
-          initial-status: "in_progress"
-
-      - name: Deploy to server
-        id: deploy
-        uses: appleboy/ssh-action@v1.2.0
-        with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USER }}
-          key: ${{ secrets.SSH_KEY }}
-          port: ${{ secrets.SSH_PORT || 22 }}
-          script_stop: true
-          command_timeout: 10m
-          script: |
-            set -euo pipefail
-            echo "Starting deployment..."
-
-            # Navigate to deployment directory
-            cd "${{ secrets.SSH_PATH }}"
-            echo "Working directory: $(pwd)"
-
-            # Login to GHCR
-            docker login ghcr.io -u ${{ github.actor }} -p ${{ secrets.GITHUB_TOKEN }}
-
-
-            # Verify docker compose
-            echo "Docker Compose version:"
-            docker compose version
-
-            # Create backup of current state
-            echo "Creating backup..."
-            docker compose -f compose.cocktail.prod.yml config > docker-compose.backup.yml
-
-            # Health check before deployment
-            echo "Running pre-deployment health check..."
-            if docker compose -f compose.cocktail.prod.yml ps --services --filter "status=running" 2>/dev/null | grep -q . || true; then
-              echo "Services are running"
-            else
-              echo "No services currently running"
-            fi
-
-            # Pull latest images
-            echo "Pulling latest images..."
-            docker compose -f compose.cocktail.prod.yml pull
-
-            # Ensure compose file uses only registry images, not local build contexts
-
-            # Deploy with zero-downtime strategy
-            echo "Deploying services..."
-            docker compose -f compose.cocktail.prod.yml up -d --remove-orphans
-
-            # Wait for services to be ready
-            echo "Waiting for services to be ready..."
-            sleep 30
-
-            # Cleanup old images
-            echo "Cleaning up old images..."
-            docker image prune -f
-
-            # Show running containers
-            echo "Running containers:"
-            docker compose -f compose.cocktail.prod.yml ps
-
-            echo "Deployment completed successfully!"
-        env:
-          GHCR_USERNAME: ${{ secrets.GHCR_USERNAME }}
-          GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
-          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
-
-      - name: Update deployment status (success)
-        if: success()
-        uses: chrnorm/deployment-action@v2
-        with:
-          token: ${{ github.token }}
-          environment: ${{ inputs.environment || 'production' }}
-          state: "success"
-          deployment-id: ${{ steps.deployment.outputs.deployment_id }}
-
-      - name: Update deployment status (failure)
-        if: failure()
-        uses: chrnorm/deployment-action@v2
-        with:
-          token: ${{ github.token }}
-          environment: ${{ inputs.environment || 'production' }}
-          state: "failure"
-          deployment-id: ${{ steps.deployment.outputs.deployment_id }}
-
-  notify:
-    name: 📢 Notify
-    runs-on: ubuntu-latest
-    needs: [deploy]
-    if: always()
-    steps:
-      - name: Notify success
-        if: needs.deploy.result == 'success'
-        run: |
-          echo "✅ Deployment successful!"
-          echo "🌐 Application should be available at your configured URL"
-
-      - name: Notify failure
-        if: needs.deploy.result == 'failure'
-        run: |
-          echo "❌ Deployment failed!"
-          echo "Please check the logs and verify your server configuration"
+          echo "✅ Deploy + Caddy reload OK"
