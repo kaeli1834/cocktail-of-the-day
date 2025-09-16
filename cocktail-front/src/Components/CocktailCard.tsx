@@ -8,14 +8,10 @@ import {
   Divider,
   Box,
 } from "@mui/material";
+import type { Cocktail } from "../Types/Cocktail";
 
 type Props = {
-  cocktail: {
-    name?: string;
-    image?: string;
-    ingredients?: string[];
-    instructions?: string;
-  };
+  cocktail: Cocktail;
 };
 
 export default function CocktailCard({ cocktail }: Props) {

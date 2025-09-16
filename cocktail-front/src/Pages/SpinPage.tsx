@@ -115,10 +115,10 @@ export default function SpinPage() {
                 ])
               : await cocktailAPI.getCocktailsByIngredients(toFetch);
 
-          const data = res.cocktails || [];
+          const data = Array.isArray(res.cocktails) ? res.cocktails : [];
 
           for (const drink of data) {
-            if (!all.find((d) => d.id === drink.idDrink)) {
+            if (drink && drink.id && !all.find((d) => d.id === drink.id)) {
               all.push(drink);
             }
           }
@@ -134,8 +134,6 @@ export default function SpinPage() {
   };
 
   const isAllSelected = selectedAlcohols.length === realAlcoholOptions.length;
-
-  console.log(cocktailDetails);
 
   return (
     <Container

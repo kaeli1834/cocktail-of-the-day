@@ -28,6 +28,11 @@ export interface SearchResponse {
   query: string;
 }
 
+export interface CocktailsByIngredientsResponse {
+  cocktails: Cocktail[];
+  count: number;
+}
+
 export interface HealthResponse {
   status: string;
   timestamp: string;
@@ -62,8 +67,8 @@ class CocktailAPI {
   }
 
   // Get cocktails by ingredients
-  async getCocktailsByIngredients(ingredients: string[]): Promise<Cocktail[]> {
-    const response: AxiosResponse<Cocktail[]> = await apiClient.get('/api/cocktail/ingredients', {
+  async getCocktailsByIngredients(ingredients: string[]): Promise<CocktailsByIngredientsResponse> {
+    const response: AxiosResponse<CocktailsByIngredientsResponse> = await apiClient.get('/api/cocktail/ingredients', {
       params: { ingredients: ingredients.join(',') }
     });
     return response.data;

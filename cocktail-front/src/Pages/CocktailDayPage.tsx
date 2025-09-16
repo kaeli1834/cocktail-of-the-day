@@ -16,7 +16,7 @@ import {
 } from "@mui/material";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import { cocktailAPI } from "../services/api";
-import type { Cocktail } from "../Types/Cocktail.tsx";
+import type { Cocktail } from "../Types/Cocktail";
 
 function CocktailDayPage() {
   const [cocktail, setCocktail] = useState<Cocktail | null>(null);

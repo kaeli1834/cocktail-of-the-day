@@ -30,7 +30,6 @@ export default function WheelSpinner({
   }, [cocktails]);
 
   const handleStopSpinning = async () => {
-    console.log("Arrêt de la roulette");
     if (!cocktails || !cocktails[prizeNumber]) return;
 
     const id = cocktails[prizeNumber].id;

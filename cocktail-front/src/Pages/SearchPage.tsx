@@ -40,7 +40,7 @@ export default function SearchPage() {
 
     try {
       const response = await cocktailAPI.searchCocktails(searchQuery.trim());
-      setCocktails(response.cocktails);
+      setCocktails(Array.isArray(response.cocktails) ? response.cocktails : []);
     } catch {
       setError("Error during search. Please try again.");
       setCocktails([]);
