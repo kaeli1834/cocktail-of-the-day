@@ -22,7 +22,7 @@ apiClient.interceptors.response.use(
 );
 
 export interface SearchResponse {
-  data: Record<string, unknown>;
+  data: { cocktails: Cocktail[], drinks: Cocktail[] }; // Adjusted to match expected response structure
   cocktails: Cocktail[];
   count: number;
   query: string;

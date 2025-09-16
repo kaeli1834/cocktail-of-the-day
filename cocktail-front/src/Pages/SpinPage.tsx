@@ -125,24 +125,7 @@ export default function SpinPage() {
         })
       );
       setCocktails(all);
-      // Select a random cocktail if the list is not empty
-      if (all.length === 0) {
-        setError(
-          "No cocktail found for the selected alcohol types. Please adjust your selection."
-        );
-      } else {
-        // Fetch full cocktail details before setting
-        try {
-          let random = null;
-          while (random === null) {
-            random = all[Math.floor(Math.random() * all.length)];
-          }
-
-          setCocktailDetails(random);
-        } catch (err) {
-          setError("Error loading cocktail details.");
-        }
-      }
+      setCocktailDetails(null);
     } catch (err) {
       console.error("Error loading cocktails:", err);
       setError("Error loading cocktails. Please try again.");
@@ -151,6 +134,8 @@ export default function SpinPage() {
   };
 
   const isAllSelected = selectedAlcohols.length === realAlcoholOptions.length;
+
+  console.log(cocktailDetails);
 
   return (
     <Container
@@ -391,25 +376,7 @@ export default function SpinPage() {
             </Alert>
           )}
 
-          {loading ? (
-            <Box
-              sx={{
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                py: 6,
-              }}
-            >
-              <CircularProgress color="secondary" size={80} sx={{ mb: 3 }} />
-              <Typography
-                variant="h6"
-                color="text.secondary"
-                sx={{ textAlign: "center" }}
-              >
-                Preparing your cocktail...
-              </Typography>
-            </Box>
-          ) : cocktailDetails && !error ? (
+          {cocktailDetails && !error ? (
             <Fade in={true} timeout={600}>
               <Box
                 sx={{
@@ -426,7 +393,10 @@ export default function SpinPage() {
           ) : cocktails.length > 0 && !error ? (
             <WheelSpinner
               cocktails={cocktails}
-              onResult={(drink) => setCocktailDetails(drink)}
+              onResult={(drink) => {
+                setCocktailDetails(drink);
+                setLoading(false);
+              }}
             />
           ) : !error ? (
             <Box sx={{ textAlign: "center", py: 6, maxWidth: 400 }}>

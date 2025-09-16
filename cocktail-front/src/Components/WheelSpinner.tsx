@@ -8,9 +8,10 @@ export default function WheelSpinner({
   cocktails = [],
   onResult,
 }: {
-  cocktails?: { option: string; id: string }[];
+  cocktails?: Cocktail[];
   onResult: (cocktail: Cocktail) => void;
   spinTrigger?: number;
+  spinDuration?: number;
 }) {
   const [mustSpin, setMustSpin] = useState(false);
   const [prizeNumber, setPrizeNumber] = useState(0);
@@ -29,30 +30,24 @@ export default function WheelSpinner({
   }, [cocktails]);
 
   const handleStopSpinning = async () => {
+    console.log("Arrêt de la roulette");
     if (!cocktails || !cocktails[prizeNumber]) return;
 
     const id = cocktails[prizeNumber].id;
     try {
       const details = await cocktailAPI.getCocktailById(id);
-      const drink = details.data.drinks?.[0];
-      if (!drink) return;
-
-      const ingredients: string[] = [];
-      for (let i = 1; i <= 15; i++) {
-        const ing = drink[`strIngredient${i}`];
-        const measure = drink[`strMeasure${i}`];
-        if (ing)
-          ingredients.push(
-            `${measure ? measure.trim() : ""} ${ing.trim()}`.trim()
-          );
+      const drink = details;
+      if (!drink) {
+        console.error("Détails du cocktail non trouvés");
+        return;
       }
 
       const formatted: Cocktail = {
-        id: drink.idDrink,
-        name: drink.strDrink,
-        image: drink.strDrinkThumb,
-        instructions: drink.strInstructions,
-        ingredients,
+        id: drink.id,
+        name: drink.name,
+        image: drink.image,
+        instructions: drink.instructions,
+        ingredients: drink.ingredients,
       };
 
       onResult(formatted);
@@ -61,13 +56,11 @@ export default function WheelSpinner({
     }
   };
 
-  useEffect(() => {}, [cocktails]);
-
   if (!cocktails || cocktails.length === 0) {
     return (
       <Box sx={{ textAlign: "center", my: 4 }}>
         <Typography variant="body1" color="text.secondary">
-          Sélectionnez au moins un type d'alcool pour commencer
+          Select at least one type of alcohol to start
         </Typography>
       </Box>
     );
@@ -98,7 +91,7 @@ export default function WheelSpinner({
         radiusLineColor="#ffffff55"
         radiusLineWidth={2}
         fontSize={0}
-        spinDuration={0.8}
+        spinDuration={0.45}
       />
     </Box>
   );
