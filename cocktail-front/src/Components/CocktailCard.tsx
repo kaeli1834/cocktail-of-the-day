@@ -20,10 +20,10 @@ type Props = {
 
 export default function CocktailCard({ cocktail }: Props) {
   const {
-    name = "Nom inconnu",
+    name = "Unknown name",
     image = "/placeholder.jpg",
     ingredients = [],
-    instructions = "Instructions non disponibles.",
+    instructions = "Instructions not available.",
   } = cocktail;
 
   return (
@@ -49,7 +49,7 @@ export default function CocktailCard({ cocktail }: Props) {
         spacing={0}
         sx={{ width: "100%", height: "100%" }}
       >
-        {/* Partie gauche : texte */}
+        {/* Left part: text */}
         <CardContent
           sx={{
             flex: 2,
@@ -70,8 +70,12 @@ export default function CocktailCard({ cocktail }: Props) {
 
           <Divider sx={{ mb: 2, bgcolor: "#6c4e8c" }} />
 
-          <Typography variant="subtitle1" fontWeight={600} sx={{ color: "#f8bbd0" }}>
-            Ingrédients
+          <Typography
+            variant="subtitle1"
+            fontWeight={600}
+            sx={{ color: "#f8bbd0" }}
+          >
+            Ingredients
           </Typography>
           <Stack
             direction="row"
@@ -97,12 +101,16 @@ export default function CocktailCard({ cocktail }: Props) {
               ))
             ) : (
               <Typography variant="body2" color="#e1bee7">
-                Aucun ingrédient listé.
+                No ingredients listed.
               </Typography>
             )}
           </Stack>
 
-          <Typography variant="subtitle1" fontWeight={600} sx={{ color: "#f8bbd0" }}>
+          <Typography
+            variant="subtitle1"
+            fontWeight={600}
+            sx={{ color: "#f8bbd0" }}
+          >
             Instructions
           </Typography>
           <Typography
@@ -118,7 +126,7 @@ export default function CocktailCard({ cocktail }: Props) {
           </Typography>
         </CardContent>
 
-        {/* Partie droite : image */}
+        {/* Right part: image */}
         <Box
           sx={{
             flex: 1,

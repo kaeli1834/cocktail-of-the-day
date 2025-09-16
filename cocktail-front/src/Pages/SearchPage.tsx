@@ -42,7 +42,7 @@ export default function SearchPage() {
       const response = await cocktailAPI.searchCocktails(searchQuery.trim());
       setCocktails(response.cocktails);
     } catch {
-      setError("Erreur lors de la recherche. Veuillez réessayer.");
+      setError("Error during search. Please try again.");
       setCocktails([]);
     } finally {
       setLoading(false);
@@ -75,10 +75,10 @@ export default function SearchPage() {
         }}
       >
         <Typography variant="h4" fontWeight={700}>
-          🔍 Rechercher des cocktails
+          🔍 Search for cocktails
         </Typography>
         <Typography variant="subtitle1" sx={{ opacity: 0.9, mt: 1 }}>
-          Trouvez votre cocktail parfait par nom
+          Find your perfect cocktail by name
         </Typography>
       </Paper>
 
@@ -87,7 +87,7 @@ export default function SearchPage() {
         <TextField
           fullWidth
           variant="outlined"
-          placeholder="Rechercher un cocktail (ex: Mojito, Margarita...)"
+          placeholder="Search for a cocktail (e.g. Mojito, Margarita...)"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           InputProps={{
@@ -130,8 +130,8 @@ export default function SearchPage() {
           {cocktails.length > 0 ? (
             <>
               <Typography variant="h6" sx={{ mb: 3, color: "text.secondary" }}>
-                {cocktails.length} résultat{cocktails.length > 1 ? "s" : ""}{" "}
-                trouvé{cocktails.length > 1 ? "s" : ""} pour "{query}"
+                {cocktails.length} result{cocktails.length > 1 ? "s" : ""} found
+                for "{query}"
               </Typography>
 
               <Box
@@ -212,7 +212,7 @@ export default function SearchPage() {
                         variant="body2"
                         sx={{ color: "#f8bbd0", fontWeight: 500, mb: 1 }}
                       >
-                        Ingrédients:
+                        Ingredients:
                       </Typography>
                       <Typography
                         variant="body2"
@@ -239,7 +239,7 @@ export default function SearchPage() {
                             display: "block",
                           }}
                         >
-                          Verre: {cocktail.glass}
+                          Glass: {cocktail.glass}
                         </Typography>
                       )}
                     </CardContent>
@@ -250,10 +250,10 @@ export default function SearchPage() {
           ) : query.trim().length >= 2 ? (
             <Box sx={{ textAlign: "center", py: 6 }}>
               <Typography variant="h6" color="text.secondary" sx={{ mb: 2 }}>
-                Aucun cocktail trouvé pour "{query}"
+                No cocktail found for "{query}"
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                Essayez avec un autre terme de recherche
+                Try another search term
               </Typography>
             </Box>
           ) : null}
@@ -265,10 +265,10 @@ export default function SearchPage() {
         <Box sx={{ textAlign: "center", py: 6 }}>
           <SearchIcon sx={{ fontSize: 80, color: "text.secondary", mb: 2 }} />
           <Typography variant="h6" color="text.secondary" sx={{ mb: 1 }}>
-            Commencez votre recherche
+            Start your search
           </Typography>
           <Typography variant="body2" color="text.secondary">
-            Tapez au moins 2 caractères pour rechercher des cocktails
+            Type at least 2 characters to search for cocktails
           </Typography>
         </Box>
       )}

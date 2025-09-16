@@ -14,7 +14,7 @@ import {
   Alert,
   Button,
 } from "@mui/material";
-import RefreshIcon from '@mui/icons-material/Refresh';
+import RefreshIcon from "@mui/icons-material/Refresh";
 import { cocktailAPI } from "../services/api";
 import type { Cocktail } from "../Types/Cocktail.tsx";
 
@@ -26,13 +26,13 @@ function CocktailDayPage() {
   const fetchDailyCocktail = async () => {
     setLoading(true);
     setError(null);
-    
+
     try {
       const dailyCocktail = await cocktailAPI.getDailyCocktail();
       setCocktail(dailyCocktail);
     } catch (err) {
-      console.error("Erreur API :", err);
-      setError("Impossible de récupérer le cocktail du jour. Veuillez réessayer.");
+      console.error("API Error:", err);
+      setError("Unable to fetch the cocktail of the day. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -53,7 +53,7 @@ function CocktailDayPage() {
         alignItems: "center",
       }}
     >
-      {/* En-tête principale */}
+      {/* Main Header */}
       <Paper
         elevation={3}
         sx={{
@@ -68,29 +68,29 @@ function CocktailDayPage() {
         }}
       >
         <Typography variant="h4" fontWeight={700}>
-          🍸 Cocktail du jour
+          🍸 Cocktail of the Day
         </Typography>
         <Typography variant="subtitle1" sx={{ opacity: 0.9 }}>
-          Découvre un nouveau cocktail chaque jour
+          Discover a new cocktail every day
         </Typography>
       </Paper>
 
       {/* Error Display */}
       {error && (
-        <Alert 
-          severity="error" 
-          sx={{ 
-            mb: 4, 
+        <Alert
+          severity="error"
+          sx={{
+            mb: 4,
             borderRadius: 2,
           }}
           action={
-            <Button 
-              color="inherit" 
-              size="small" 
+            <Button
+              color="inherit"
+              size="small"
               onClick={fetchDailyCocktail}
               startIcon={<RefreshIcon />}
             >
-              Réessayer
+              Retry
             </Button>
           }
         >
@@ -98,7 +98,7 @@ function CocktailDayPage() {
         </Alert>
       )}
 
-      {/* Contenu principal */}
+      {/* Main Content */}
       {loading ? (
         <Box sx={{ display: "flex", justifyContent: "center", mt: 8 }}>
           <CircularProgress size={60} color="secondary" />
@@ -123,7 +123,7 @@ function CocktailDayPage() {
             },
           }}
         >
-          {/* Image à droite sur desktop, au-dessus sur mobile */}
+          {/* Image on the right for desktop, above for mobile */}
           <Box
             sx={{
               flex: 1,
@@ -153,7 +153,7 @@ function CocktailDayPage() {
               }}
             />
           </Box>
-          {/* Texte à gauche */}
+          {/* Text on the left */}
           <CardContent
             sx={{
               flex: 2,
@@ -174,8 +174,12 @@ function CocktailDayPage() {
 
             <Divider sx={{ mb: 2, bgcolor: "#6c4e8c" }} />
 
-            <Typography variant="subtitle1" fontWeight={600} sx={{ color: "#f8bbd0" }}>
-              Ingrédients
+            <Typography
+              variant="subtitle1"
+              fontWeight={600}
+              sx={{ color: "#f8bbd0" }}
+            >
+              Ingredients
             </Typography>
             <Stack
               direction="row"
@@ -200,7 +204,11 @@ function CocktailDayPage() {
               ))}
             </Stack>
 
-            <Typography variant="subtitle1" fontWeight={600} sx={{ color: "#f8bbd0" }}>
+            <Typography
+              variant="subtitle1"
+              fontWeight={600}
+              sx={{ color: "#f8bbd0" }}
+            >
               Instructions
             </Typography>
             <Typography
@@ -218,7 +226,7 @@ function CocktailDayPage() {
         </Card>
       ) : (
         <Typography color="error" sx={{ mt: 4 }} align="center">
-          Erreur lors de la récupération du cocktail.
+          Error while fetching the cocktail.
         </Typography>
       )}
     </Container>
