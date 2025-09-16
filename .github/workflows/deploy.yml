@@ -194,58 +194,13 @@ jobs:
           script: |
             set -euo pipefail
 
-            APP_DIR="${{ secrets.COCKTAIL_PATH }}"              # ex: /srv/cocktail-of-the-day
-            CADDY_ROOT="${{ secrets.SSH_CADDY_ROOT }}"          # ex: /srv/caddy
-            DOMAIN="${{ secrets.COCKTAIL_DOMAIN }}"             # ex: cocktail.getkaeli.com
+            APP_DIR="${{ secrets.COCKTAIL_PATH }}"              
+            CADDY_ROOT="${{ secrets.SSH_CADDY_ROOT }}"          
+            DOMAIN="${{ secrets.COCKTAIL_DOMAIN }}"            
 
             # -------- Compose prod minimal (images uniquement) --------
             mkdir -p "$APP_DIR"
             cd "$APP_DIR"
-
-            cat > compose.cocktail.prod.yml <<'EOF'
-            version: "3.9"
-            name: cocktail
-            networks:
-              caddy_net:
-                external: true
-            services:
-              cocktail-api:
-                image: ghcr.io/${{ github.repository }}/cocktail-api:latest
-                container_name: cocktail-api
-                restart: unless-stopped
-                expose:
-                  - "3000"
-                environment:
-                  NODE_ENV: production
-                healthcheck:
-                  test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3000/api/health"]
-                  interval: 20s
-                  timeout: 5s
-                  retries: 5
-                networks: [ caddy_net ]
-                logging:
-                  driver: json-file
-                  options: { max-size: "10m", max-file: "3" }
-
-              cocktail-front:
-                image: ghcr.io/${{ github.repository }}/cocktail-front:latest
-                container_name: cocktail-front
-                restart: unless-stopped
-                # NOTE: change "8080" -> "80" if your Nginx listens on 80
-                expose:
-                  - "8080"
-                environment:
-                  NODE_ENV: production
-                healthcheck:
-                  test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8080/health || wget -qO- http://127.0.0.1:8080/"]
-                  interval: 20s
-                  timeout: 5s
-                  retries: 5
-                networks: [ caddy_net ]
-                logging:
-                  driver: json-file
-                  options: { max-size: "10m", max-file: "3" }
-            EOF
 
             # (Si GHCR privé) login:
             # echo "${GHCR_TOKEN}" | docker login ghcr.io -u "${GHCR_USERNAME}" --password-stdin
@@ -253,41 +208,6 @@ jobs:
             docker compose -f compose.cocktail.prod.yml pull
             docker compose -f compose.cocktail.prod.yml up -d
             docker compose -f compose.cocktail.prod.yml ps
-
-            # -------- Mise à jour du Caddyfile (un seul domaine + /api) --------
-            CADDY_FILE="$CADDY_ROOT/Caddyfile"
-            TS="$(date +%Y%m%d_%H%M%S)"
-            cp "$CADDY_FILE" "$CADDY_FILE.bak.$TS"
-
-            # Supprimer l'ancien bloc marqué (idempotent)
-            sed -i '/# >>> cocktail BEGIN >>>/,/# <<< cocktail END <<</d' "$CADDY_FILE"
-
-            # Ajouter le nouveau bloc
-            # NOTE: change :8080 -> :80 si ton Nginx écoute 80
-            cat >> "$CADDY_FILE" <<EOF
-            # >>> cocktail BEGIN >>>
-            ${DOMAIN} {
-                encode zstd gzip
-
-                @api path /api/*
-                handle @api {
-                    reverse_proxy cocktail-api:3000
-                }
-
-                handle {
-                    reverse_proxy cocktail-front:8080
-                }
-
-                header {
-                    Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
-                    X-Frame-Options "DENY"
-                    X-Content-Type-Options "nosniff"
-                    Referrer-Policy "strict-origin-when-cross-origin"
-                    Permissions-Policy "geolocation=(), microphone=()"
-                }
-            }
-            # <<< cocktail END <<<
-            EOF
 
             # -------- Valider & recharger Caddy --------
             if docker compose -f "$CADDY_ROOT/docker-compose.yml" ps | grep -q caddy; then
