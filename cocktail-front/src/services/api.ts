@@ -22,6 +22,7 @@ apiClient.interceptors.response.use(
 );
 
 export interface SearchResponse {
+  data: Record<string, unknown>;
   cocktails: Cocktail[];
   count: number;
   query: string;
@@ -56,6 +57,14 @@ class CocktailAPI {
   async searchCocktails(query: string): Promise<SearchResponse> {
     const response: AxiosResponse<SearchResponse> = await apiClient.get('/api/search', {
       params: { q: query }
+    });
+    return response.data;
+  }
+
+  // Get cocktails by ingredients
+  async getCocktailsByIngredients(ingredients: string[]): Promise<Cocktail[]> {
+    const response: AxiosResponse<Cocktail[]> = await apiClient.get('/api/cocktail/ingredients', {
+      params: { ingredients: ingredients.join(',') }
     });
     return response.data;
   }
