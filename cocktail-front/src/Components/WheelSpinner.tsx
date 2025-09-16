@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
 import { Wheel } from "react-custom-roulette";
-import axios from "axios";
 import { Box, Typography } from "@mui/material";
 import type { Cocktail } from "../Types/Cocktail";
+import cocktailAPI from "../services/api";
 
 export default function WheelSpinner({
   cocktails = [],
@@ -30,12 +30,10 @@ export default function WheelSpinner({
 
   const handleStopSpinning = async () => {
     if (!cocktails || !cocktails[prizeNumber]) return;
-    
+
     const id = cocktails[prizeNumber].id;
     try {
-      const details = await axios.get(
-        `https://www.thecocktaildb.com/api/json/v1/1/lookup.php?i=${id}`
-      );
+      const details = await cocktailAPI.getCocktailById(id);
       const drink = details.data.drinks?.[0];
       if (!drink) return;
 
@@ -63,10 +61,7 @@ export default function WheelSpinner({
     }
   };
 
-
-  useEffect(() => {
-
-  }, [cocktails]);
+  useEffect(() => {}, [cocktails]);
 
   if (!cocktails || cocktails.length === 0) {
     return (
@@ -89,8 +84,12 @@ export default function WheelSpinner({
           handleStopSpinning();
         }}
         backgroundColors={[
-          "#f06292", "#ba68c8", "#ce93d8", "#ab47bc",
-          "#f8bbd0", "#e1bee7"
+          "#f06292",
+          "#ba68c8",
+          "#ce93d8",
+          "#ab47bc",
+          "#f8bbd0",
+          "#e1bee7",
         ]}
         textColors={["transparent"]}
         outerBorderColor="#fff"
