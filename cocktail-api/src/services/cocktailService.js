@@ -52,8 +52,10 @@ class CocktailService {
     }
   }
 
-  async getAllAlcoholicCocktails() {
-    return this.makeRequest('/filter.php?a=Alcoholic');
+  async getAllAlcoholicCocktails(isAlcoholic = true) {
+    const endpoint = isAlcoholic ? '/filter.php?a=Alcoholic' : '/filter.php?a=Non_Alcoholic';
+    const cocktails = this.makeRequest(endpoint);
+    return cocktails;
   }
 
   async getCocktailById(id) {
@@ -64,6 +66,38 @@ class CocktailService {
     return this.makeRequest(`/search.php?s=${encodeURIComponent(query)}`);
   }
 
+  async getCocktailByIngredient(ingredient) {
+    return this.makeRequest(`/filter.php?i=${encodeURIComponent(ingredient)}`);
+  }
+
+  // multi ingredients
+  async getCocktailsByIngredients(ingredients) {
+    if (!Array.isArray(ingredients) || ingredients.length === 0) {
+      throw new Error('Ingredients must be a non-empty array');
+    }
+
+    // Fetch cocktails for each ingredient
+    const promises = ingredients.map(ing => this.getCocktailByIngredient(ing));
+    const results = await Promise.all(promises);
+
+    // Find intersection of cocktail IDs
+    const cocktailIdSets = results.map(res => new Set(res.drinks ? res.drinks.map(d => d.idDrink) : []));
+    const commonIds = cocktailIdSets.reduce((acc, set) => {
+      return new Set([...acc].filter(id => set.has(id)));
+    });
+
+    // Fetch detailed info for common cocktails
+    const detailedPromises = Array.from(commonIds).map(id => this.getCocktailById(id));
+    const detailedResults = await Promise.all(detailedPromises);
+
+    // Format and return cocktails
+    const cocktails = detailedResults
+      .filter(res => res.drinks && res.drinks.length > 0)
+      .map(res => this.formatCocktail(res.drinks[0]));
+
+    return { drinks: cocktails };
+  }
+
   async getRandomCocktail() {
     return this.makeRequest('/random.php');
   }
@@ -71,7 +105,7 @@ class CocktailService {
   async getDailyCocktail() {
     try {
       // Get all alcoholic cocktails
-      const listData = await this.getAllAlcoholicCocktails();
+      const listData = await this.getAllAlcoholicCocktails(true);
       const cocktails = listData.drinks;
 
       if (!cocktails || cocktails.length === 0) {

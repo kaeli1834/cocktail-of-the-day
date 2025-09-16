@@ -7,6 +7,7 @@ const router = express.Router();
 router.get('/daily-cocktail', cocktailController.getDailyCocktail);
 router.get('/random-cocktail', cocktailController.getRandomCocktail);
 router.get('/search', cocktailController.searchCocktails);
+router.get('/cocktail/ingredients', cocktailController.getCocktailsByIngredients);
 router.get('/cocktail/:id', cocktailController.getCocktailById);
 
 // Admin/Debug routes
