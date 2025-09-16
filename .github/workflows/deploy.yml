@@ -180,7 +180,7 @@ jobs:
             VITE_API_URL=http://localhost:3000
 
   deploy:
-    name: 🚀 Deploy (API + Front)
+    name: 🚀 Deploy (API + Front) - Single Domain with /api
     needs: build-and-push
     runs-on: ubuntu-latest
     steps:
@@ -193,109 +193,115 @@ jobs:
           port: ${{ secrets.SSH_PORT }}
           script: |
             set -euo pipefail
-            APP_DIR="${{ secrets.COCKTAIL_PATH }}"   
-            CADDY_ROOT="${{ secrets.SSH_CADDY_ROOT }}"  
-            API_DOMAIN="${{ secrets.COCKTAIL_API_DOMAIN }}"    
-            FRONT_DOMAIN="${{ secrets.COCKTAIL_FRONT_DOMAIN }}"
-  
+
+            APP_DIR="${{ secrets.COCKTAIL_PATH }}"              # ex: /srv/cocktail-of-the-day
+            CADDY_ROOT="${{ secrets.SSH_CADDY_ROOT }}"          # ex: /srv/caddy
+            DOMAIN="${{ secrets.COCKTAIL_DOMAIN }}"             # ex: cocktail.getkaeli.com
+
+            # -------- Compose prod minimal (images uniquement) --------
             mkdir -p "$APP_DIR"
             cd "$APP_DIR"
-  
-            # (Option) régénérer le compose si tu préfères piloté par CI
+
             cat > compose.cocktail.prod.yml <<'EOF'
-            version: "3.8"
+            version: "3.9"
+            name: cocktail
             networks:
-              web:
+              caddy_net:
                 external: true
             services:
               cocktail-api:
                 image: ghcr.io/${{ github.repository }}/cocktail-api:latest
                 container_name: cocktail-api
                 restart: unless-stopped
-                expose: ["3000"]
+                expose:
+                  - "3000"
                 environment:
                   NODE_ENV: production
                 healthcheck:
-                  test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3000/health || exit 1"]
-                  interval: 30s
+                  test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3000/api/health"]
+                  interval: 20s
                   timeout: 5s
-                  retries: 3
-                networks: [web]
+                  retries: 5
+                networks: [ caddy_net ]
                 logging:
                   driver: json-file
                   options: { max-size: "10m", max-file: "3" }
+
               cocktail-front:
                 image: ghcr.io/${{ github.repository }}/cocktail-front:latest
                 container_name: cocktail-front
                 restart: unless-stopped
-                expose: ["8080"]
+                # NOTE: change "8080" -> "80" if your Nginx listens on 80
+                expose:
+                  - "8080"
                 environment:
                   NODE_ENV: production
                 healthcheck:
-                  test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8080/ || exit 1"]
-                  interval: 30s
+                  test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8080/health || wget -qO- http://127.0.0.1:8080/"]
+                  interval: 20s
                   timeout: 5s
-                  retries: 3
-                networks: [web]
+                  retries: 5
+                networks: [ caddy_net ]
                 logging:
                   driver: json-file
                   options: { max-size: "10m", max-file: "3" }
             EOF
-  
-            echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+
+            # (Si GHCR privé) login:
+            # echo "${GHCR_TOKEN}" | docker login ghcr.io -u "${GHCR_USERNAME}" --password-stdin
+
             docker compose -f compose.cocktail.prod.yml pull
             docker compose -f compose.cocktail.prod.yml up -d
             docker compose -f compose.cocktail.prod.yml ps
-  
-            # 🔧 MAJ Caddy (ajout/MAJ des 2 blocs avec marqueurs)
+
+            # -------- Mise à jour du Caddyfile (un seul domaine + /api) --------
             CADDY_FILE="$CADDY_ROOT/Caddyfile"
             TS="$(date +%Y%m%d_%H%M%S)"
             cp "$CADDY_FILE" "$CADDY_FILE.bak.$TS"
-  
-            # Supprimer anciens blocs (idempotent)
-            for NAME in "cocktail-api" "cocktail-front"; do
-              sed -i "/# >>> $NAME BEGIN >>>/,/# <<< $NAME END <<</d" "$CADDY_FILE"
-            done
-  
-            # Ajouter bloc API
+
+            # Supprimer l'ancien bloc marqué (idempotent)
+            sed -i '/# >>> cocktail BEGIN >>>/,/# <<< cocktail END <<</d' "$CADDY_FILE"
+
+            # Ajouter le nouveau bloc
+            # NOTE: change :8080 -> :80 si ton Nginx écoute 80
             cat >> "$CADDY_FILE" <<EOF
-            # >>> cocktail-api BEGIN >>>
-            ${API_DOMAIN} {
-              reverse_proxy cocktail-api:3000
-              encode zstd gzip
-              header {
-                X-Frame-Options "DENY"
-                X-Content-Type-Options "nosniff"
-                Referrer-Policy "no-referrer"
-                Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
-              }
+            # >>> cocktail BEGIN >>>
+            ${DOMAIN} {
+                encode zstd gzip
+
+                @api path /api/*
+                handle @api {
+                    reverse_proxy cocktail-api:3000
+                }
+
+                handle {
+                    reverse_proxy cocktail-front:8080
+                }
+
+                header {
+                    Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+                    X-Frame-Options "DENY"
+                    X-Content-Type-Options "nosniff"
+                    Referrer-Policy "strict-origin-when-cross-origin"
+                    Permissions-Policy "geolocation=(), microphone=()"
+                }
             }
-            # <<< cocktail-api END <<<
+            # <<< cocktail END <<<
             EOF
-  
-            # Ajouter bloc FRONT
-            cat >> "$CADDY_FILE" <<EOF
-            # >>> cocktail-front BEGIN >>>
-            ${FRONT_DOMAIN} {
-              reverse_proxy cocktail-front:8080
-              encode zstd gzip
-              header {
-                X-Frame-Options "DENY"
-                X-Content-Type-Options "nosniff"
-                Referrer-Policy "no-referrer"
-                Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
-              }
-            }
-            # <<< cocktail-front END <<<
-            EOF
-  
-            # Valider et recharger Caddy
-            docker compose -f "$CADDY_ROOT/docker-compose.yml" exec -T caddy caddy validate --config /etc/caddy/Caddyfile
-            # si caddy n'est pas Up, le démarrer
-            if ! docker ps --filter "name=caddy" --filter "status=running" | grep -q caddy; then
+
+            # -------- Valider & recharger Caddy --------
+            if docker compose -f "$CADDY_ROOT/docker-compose.yml" ps | grep -q caddy; then
+              docker compose -f "$CADDY_ROOT/docker-compose.yml" exec -T caddy caddy validate --config /etc/caddy/Caddyfile
+              docker compose -f "$CADDY_ROOT/docker-compose.yml" exec -T caddy caddy reload --config /etc/caddy/Caddyfile
+            else
               docker compose -f "$CADDY_ROOT/docker-compose.yml" up -d caddy
+              # petite marge pour que caddy démarre
               sleep 5
+              docker compose -f "$CADDY_ROOT/docker-compose.yml" exec -T caddy caddy validate --config /etc/caddy/Caddyfile
+              docker compose -f "$CADDY_ROOT/docker-compose.yml" exec -T caddy caddy reload --config /etc/caddy/Caddyfile
             fi
-            docker compose -f "$CADDY_ROOT/docker-compose.yml" exec -T caddy caddy reload --config /etc/caddy/Caddyfile
-  
-            echo "✅ Deploy + Caddy reload OK"
+
+            echo "✅ Deploy OK — Caddy reloaded with single-domain /api routing"
+        env:
+          GHCR_USERNAME: ${{ secrets.GHCR_USERNAME }}
+          GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
