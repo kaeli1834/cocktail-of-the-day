@@ -176,8 +176,6 @@ jobs:
           labels: ${{ steps.meta-front.outputs.labels }}
           cache-from: type=gha,scope=frontend
           cache-to: type=gha,mode=max,scope=frontend
-          build-args: |
-            VITE_API_URL=http://localhost:3000
 
   deploy:
     name: 🚀 Deploy (API + Front) - Single Domain with /api
